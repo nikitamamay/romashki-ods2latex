@@ -1,0 +1,33 @@
+\documentclass[a4paper, 14pt]{extarticle}
+
+\usepackage{polyglossia}
+\setdefaultlanguage[babelshorthands=true]{russian}
+\setotherlanguage{english}
+
+\usepackage[default]{droidserif}
+
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{amsmath}
+\usepackage{icomma}
+
+\renewcommand{\deg}{\ensuremath{\text{°}}}
+
+
+% FIXME
+\newcommand{\phantomwhere}{\phantom{где }}
+
+\sloppy
+
+\begin{document}
+
+	% \tableofcontents
+	% \clearpage
+
+	\input{../data_calc_raw.tex}
+	\clearpage
+
+	\input{bib.tex}
+	\clearpage
+
+\end{document}
