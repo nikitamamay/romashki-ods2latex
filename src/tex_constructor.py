@@ -68,11 +68,11 @@ class Document():
     def text_constant(self, co: calc_object.CalcObject) -> str:
         ifsource = " " + self.text_cite(co.source_name(), co.source_aux()) if co.source_name() != "" else ""
         ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
-        return f'{str_utils.first_uppercase(co.description())} ${co.texput()} = {self.text_value(co)}{ifunit}${ifsource}.\n'
+        return f'{str_utils.first_uppercase(co.description())} ${co.texput()} = {self.text_value(co, True)}{ifunit}${ifsource}.\n'
 
     def text_where_line(self, co: calc_object.CalcObject) -> str:
         ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
-        ifvalue = f' = {self.text_value(co)}{ifunit}' if co.is_constant() else ""
+        ifvalue = f' = {self.text_value(co, True)}{ifunit}' if co.is_constant() else ""
         ifsource = " " + self.text_cite(co.source_name(), co.source_aux()) if co.source_name() != "" and co.is_constant() else ""
         return f'${co.texput()}{ifvalue}$ --- {co.description()}{ifsource}'
 
@@ -100,18 +100,18 @@ class Document():
         if with_number or not is_together:
             return f'{str_utils.first_uppercase(co.description())} --- по формуле{ifsource}:\n\\begin{{gather{ifstar}}}\n' \
                 + f'\t{co.texput()}\n\t= {self.subst_symbols(co)}\n\t,{iflabel}\n\t\\\\\n\t{co.texput()}\n\t= {self.subst_numbers(co)}\n' \
-                + f'\t= {self.text_value(co)}{ifunit}{ifcomma}{ifnotag}\n\\end{{gather{ifstar}}}\n'
+                + f'\t= {self.text_value(co, True)}{ifunit}{ifcomma}{ifnotag}\n\\end{{gather{ifstar}}}\n'
         else:
             return f'{str_utils.first_uppercase(co.description())} --- по формуле{ifsource}:\n\\begin{{equation{ifstar}}}\n'\
                 + f'\t{co.texput()}\n\t= {self.subst_symbols(co)}\n\t= {self.subst_numbers(co)}\n'\
-                + f'\t= {self.text_value(co)}{ifunit}{ifcomma}{iflabel}\n\\end{{equation{ifstar}}}\n'
+                + f'\t= {self.text_value(co, True)}{ifunit}{ifcomma}{iflabel}\n\\end{{equation{ifstar}}}\n'
 
     def text_equation_numeric(self, co: calc_object.CalcObject, with_comma: bool = False) -> str:
         ifcomma = "," if with_comma else "."
         ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
         return f'{str_utils.first_uppercase(co.description())} --- расчет значения по формуле (\\ref{{{Document.get_label(co.address())}}}):\n\\begin{{equation*}}\n'\
                 + f'\t{co.texput()}\n\t= {self.subst_numbers(co)}\n'\
-                + f'\t= {self.text_value(co)}{ifunit}{ifcomma}\n\\end{{equation*}}\n'
+                + f'\t= {self.text_value(co, True)}{ifunit}{ifcomma}\n\\end{{equation*}}\n'
 
     def text_where(self, addresses: list[sp.Address]) -> str:
         s = "где "
@@ -122,13 +122,17 @@ class Document():
         s += ".\n"
         return s
 
-    def text_value(self, co: calc_object.CalcObject) -> str:
-        if co.value() is None or co.is_constant():
-            value = co.text()
+    def text_value(self, co: calc_object.CalcObject, multiply_percentage_100: bool = True) -> str:
+        if co.value() is None or (co.is_constant()):
+            if not multiply_percentage_100:
+                value = co.value()
+            else:
+                value = co.text()
         else:
             dc = co.digits_count() if co.digits_count() != -1 else self.cfg_default_digits_count
-            v = co.value() * (100 if co.value_type() == "percentage" else 1)
-            value = math_utils.round_digits_str(v, dc) + ("\\%" if co.value_type() == "percentage" else "")
+            use_percents = (co.value_type() == "percentage" and multiply_percentage_100)
+            v = co.value() * (100 if use_percents else 1)
+            value = math_utils.round_digits_str(v, dc) + ("\\%" if use_percents else "")
         return tex_utils.pretty_number(value)
 
     def text_cite(self, cite_name: str, cite_aux: str = "") -> str:
@@ -167,7 +171,7 @@ class Document():
             co = self._COF.get_calc_object(addresses[i])
             substr = "#" + str(i + 1)
             ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
-            t = self.text_value(co) + (ifunit if self.cfg_use_units else "")
+            t = self.text_value(co, False) + (ifunit if self.cfg_use_units else "")
             s = s.replace(substr, t)
         return s
 
