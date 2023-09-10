@@ -102,4 +102,9 @@ def first_uppercase(text: str) -> str:
 	return text
 
 
+def safe_int(text: str, default: int) -> int:
+	try:
+		return int(text)
+	except Exception as e:
+		return default
 

@@ -3,6 +3,7 @@ import functools
 import re
 
 import tex_utils
+import str_utils
 import spreadsheet_parser as sp
 
 
@@ -32,6 +33,7 @@ class Headers:
 	source = "source"
 	source_name = "source_name"
 	source_aux = "source_aux"
+	digits_count = "digits_count"
 
 
 class CalcObject():
@@ -57,6 +59,7 @@ class CalcObject():
 		self._is_known: bool = False
 		self._is_constant: bool = False
 		self._do_not_print: bool = False
+		self._digits_count: int = -1
 
 		self._text: str = ""
 		self._value: 'float|None' = None
@@ -111,7 +114,7 @@ class CalcObject():
 		return self._formula
 
 	def digits_count(self) -> int:
-		return 3
+		return self._digits_count
 
 
 class CalcObjectsFactory():
@@ -145,6 +148,7 @@ class CalcObjectsFactory():
 		source = get_cell(Headers.source).text()
 		source_name = get_cell(Headers.source_name).text()
 		source_aux = get_cell(Headers.source_aux).text()
+		digits_count = get_cell(Headers.digits_count).text()
 
 		co._text = text
 		co._value = value
@@ -164,6 +168,8 @@ class CalcObjectsFactory():
 		co._do_not_print = do_not_print != ""
 		co._is_disabled = is_disabled != ""
 		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
+
+		co._digits_count = str_utils.safe_int(digits_count, -1)
 
 		if self.get_column_number(addr, Headers.source_name) != -1:
 			co._source_name = source_name

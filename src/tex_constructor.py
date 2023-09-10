@@ -26,6 +26,7 @@ class Document():
         self.cfg_always_write_where: bool = False
         self.cfg_allow_symbolic_and_numeric_equation: bool = True
         self.cfg_use_units: bool = True
+        self.cfg_default_digits_count: int = 3
         # self.cfg_enable_fast_calc_in_where: bool = True  # TODO
 
     def string(self) -> str:
@@ -125,7 +126,8 @@ class Document():
         if co.value() is None or co.is_constant():
             value = co.text()
         else:
-            value = math_utils.round_digits_str(co.value(), co.digits_count())
+            dc = co.digits_count() if co.digits_count() != -1 else self.cfg_default_digits_count
+            value = math_utils.round_digits_str(co.value(), dc)
         return tex_utils.pretty_number(value)
 
     def text_cite(self, cite_name: str, cite_aux: str = "") -> str:
