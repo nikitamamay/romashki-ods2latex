@@ -65,6 +65,12 @@ class Document():
         return new_s
 
 
+    def text_text(self, co: calc_object.CalcObject) -> str:
+        ifdescription = co.description()
+        iftext = co.text()
+        ifsep = " --- " if (len(ifdescription) > 0 and len(iftext) > 0) else ""
+        return f'{str_utils.first_uppercase(ifdescription)}{ifsep}{iftext}\n'
+
     def text_constant(self, co: calc_object.CalcObject) -> str:
         ifsource = " " + self.text_cite(co.source_name(), co.source_aux()) if co.source_name() != "" else ""
         ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
@@ -213,109 +219,84 @@ class Document():
         s = ""
         addr = co.address()
 
-        if co.is_constant():
-            if self.is_known(addr):
-                # print(co.address(), "is known; skipping it.")
-                pass
-            else:
-                s += self.text_constant(co)
-                self.set_known(addr)
-
-        elif co.is_equation():
-            # not known
-            #	or known, but not equation_known
-            # known, equation_known, but not calculated, can be calculated
-            # known, equation_known, but not calculated, cannot be calculated = skip
-            # known, equation_known, calculated = skip
-
-            try:
-                if self.is_calculated(addr):
-                    if not self.is_known(addr):
-                        # can this case appear in real?
-                        s += self.text_constant(co)
-                        self.set_known(addr)
-                    else:
-                        pass
+        if co.value_type() in ["float", "percentage"]:
+            if co.is_constant():
+                if self.is_known(addr):
+                    # print(co.address(), "is known; skipping it.")
+                    pass
                 else:
-                    dependent: list[sp.Address] = self._COF.get_dependent_addresses_in_order(co.formula(), addr.sheet())[1]
+                    s += self.text_constant(co)
+                    self.set_known(addr)
 
-                    unknown: list[sp.Address] = list(filter(lambda el: not self.is_known(el), dependent))  # if not self.cfg_always_write_where else dependent
-                    uncalculated: list[sp.Address] = list(filter(lambda el: not self.is_calculated(el), unknown))
+            else:  # is_equation()
+                # not known
+                #	or known, but not equation_known
+                # known, equation_known, but not calculated, can be calculated
+                # known, equation_known, but not calculated, cannot be calculated = skip
+                # known, equation_known, calculated = skip
 
-                    to_write_where: bool = len(unknown) > 0
-                    can_be_calculated: bool = len(uncalculated) == 0
-
-                    if can_be_calculated:
-                        if self.is_equation_known(addr):
-                            s += self.text_equation_numeric(co, False)
-                            self.set_calculated(addr)
-                        else:
-                            s += self.text_equation_symbolic_numeric(co, self.cfg_allow_symbolic_and_numeric_equation, self.cfg_use_equation_numbers, to_write_where)
+                try:
+                    if self.is_calculated(addr):
+                        if not self.is_known(addr):
+                            # can this case appear in real?
+                            s += self.text_constant(co)
                             self.set_known(addr)
-                            self.set_equation_known(addr)
-                            self.set_calculated(addr)
-
-                            if to_write_where:
-                                s += self.text_where(unknown)
-                                [self.set_known(a) for a in unknown]
-                    else:
-                        if self.is_equation_known(addr):
-                            self._to_calculate.insert(-1, co.address())  # append() leads to infinite loop!
+                        else:
                             pass
-                            print("Warning: Trying", co.address(),"- equation_known, but cannot be calculated because of these:", uncalculated)
+                    else:
+                        dependent: list[sp.Address] = self._COF.get_dependent_addresses_in_order(co.formula(), addr.sheet())[1]
+
+                        unknown: list[sp.Address] = list(filter(lambda el: not self.is_known(el), dependent))  # if not self.cfg_always_write_where else dependent
+                        uncalculated: list[sp.Address] = list(filter(lambda el: not self.is_calculated(el), unknown))
+
+                        to_write_where: bool = len(unknown) > 0
+                        can_be_calculated: bool = len(uncalculated) == 0
+
+                        if can_be_calculated:
+                            if self.is_equation_known(addr):
+                                s += self.text_equation_numeric(co, False)
+                                self.set_calculated(addr)
+                            else:
+                                s += self.text_equation_symbolic_numeric(co, self.cfg_allow_symbolic_and_numeric_equation, self.cfg_use_equation_numbers, to_write_where)
+                                self.set_known(addr)
+                                self.set_equation_known(addr)
+                                self.set_calculated(addr)
+
+                                if to_write_where:
+                                    s += self.text_where(unknown)
+                                    [self.set_known(a) for a in unknown]
                         else:
-                            s += self.text_equation_symbolic(co, self.cfg_use_equation_numbers, to_write_where)
-                            self.set_known(addr)
-                            self.set_equation_known(addr)
+                            if self.is_equation_known(addr):
+                                self._to_calculate.insert(-1, co.address())  # append() leads to infinite loop!
+                                pass
+                                print("Warning: Trying", co.address(),"- equation_known, but cannot be calculated because of these:", uncalculated)
+                            else:
+                                s += self.text_equation_symbolic(co, self.cfg_use_equation_numbers, to_write_where)
+                                self.set_known(addr)
+                                self.set_equation_known(addr)
 
-                            self._to_calculate.append(co.address())
+                                self._to_calculate.append(co.address())
 
-                            if to_write_where:
-                                s += self.text_where(unknown)
+                                if to_write_where:
+                                    s += self.text_where(unknown)
 
-                                [self.set_known(a) for a in unknown]
+                                    [self.set_known(a) for a in unknown]
 
-                                # reversed() здесь потому, что self._to_calculate итерируется в обратном порядке (с конца).
-                                [self._to_calculate.append(_co.address()) for _co in \
-                                     reversed(list(
-                                        filter(lambda _co: _co.is_equation(),
-                                            map(lambda a: self._COF.get_calc_object(a), unknown)
-                                        )
-                                    ))
-                                ]
-
-
-                # if can_be_calculated:
-
-
-
-                # if not can_be_calculated:
-                # 	s += self.text_equation_symbolic(co, self.cfg_use_equation_numbers, to_write_where)
-                # 	self.set_known(addr)
-
-                # 	if to_write_where:
-                # 		s += self.text_where(unknown)
-                # 		[self.set_known(a) for a in unknown]
-
-                # 	self._to_calculate.append(co.address())
-                # else:
-                # 	if self.is_known(addr):
-                # 		s += self.text_equation_numeric(co, False)
-                # 		self.set_calculated(addr)
-                # 	else:
-                # 		s += self.text_equation_symbolic_numeric(co, self.cfg_allow_symbolic_and_numeric_equation, self.cfg_use_equation_numbers, to_write_where)
-                # 		self.set_known(addr)
-                # 		self.set_calculated(addr)
-
-                # 		if to_write_where:
-                # 			s += self.text_where(unknown)
-                # 			[self.set_known(a) for a in unknown]
-
-                    # s += self.write_where(unknown)
-            except Exception as e:
-                import traceback
-                print("_process_CO():", co.address(), "---", e, traceback.format_exc())
+                                    # reversed() здесь потому, что self._to_calculate итерируется в обратном порядке (с конца).
+                                    [self._to_calculate.append(_co.address()) for _co in \
+                                        reversed(list(
+                                            filter(lambda _co: _co.is_equation(),
+                                                map(lambda a: self._COF.get_calc_object(a), unknown)
+                                            )
+                                        ))
+                                    ]
+                except Exception as e:
+                    import traceback
+                    print("_process_CO():", co.address(), "---", e, traceback.format_exc())
+        elif co.value_type() in ["string", ""]:
+            self.set_known(addr)
+            s += self.text_text(co)
         else:
-            raise Exception("Unknown type")
+            raise Exception(f"Unknown value_type: {repr(co.value_type())} ({addr})")
         return s
 

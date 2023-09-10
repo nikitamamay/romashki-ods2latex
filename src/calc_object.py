@@ -124,6 +124,7 @@ class CalcObjectsFactory():
 	def __init__(self, ss: sp.Spreadsheet) -> None:
 		super().__init__()
 		self._ss: sp.Spreadsheet = ss
+		self._warnings: dict[str, int] = {}
 
 	# @functools.cache
 	def get_calc_object(self, addr: sp.Address) -> 'CalcObject':
@@ -137,7 +138,7 @@ class CalcObjectsFactory():
 		texput = get_cell(Headers.texput).text()
 		description = get_cell(Headers.description).text()
 
-		if text == "" and texput == "" and description == "":  # пустой CO
+		if text == "" and texput == "" and description == "":  # пустой CalcObject
 			return co
 
 		value = c_data.value()
@@ -161,8 +162,12 @@ class CalcObjectsFactory():
 
 		co._description = description
 
-		co._texput = texput if texput != "" \
-			else f'\\text{{{tex_utils.escape_tex(addr.get_text())}}}'
+		if texput != "":
+			co._texput = texput
+		else:
+			co._texput = f'\\text{{{tex_utils.escape_tex(addr.get_text())}}}'
+			if value_type in ["float", "percentage"]:
+				self.print_warning(f"Warning: no texput for {addr}")
 
 		co._unit_texput = unit_texput
 
@@ -259,3 +264,9 @@ class CalcObjectsFactory():
 			co = self.get_calc_object(sp.Address(sheet_name, i, 0))
 			if not co.is_empty():
 				yield co
+
+	def print_warning(self, msg: str) -> None:
+		if not msg in self._warnings:
+			self._warnings[msg] = 0
+			print(msg)
+		self._warnings[msg] += 1
