@@ -179,6 +179,9 @@ class Cell():
 	def value(self) -> float:
 		return self._value
 
+	def value_type(self) -> str:
+		return self._value_type
+
 	def formula(self) -> str:
 		return self._formula
 

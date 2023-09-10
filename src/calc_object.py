@@ -110,6 +110,9 @@ class CalcObject():
 	def value(self) -> 'float|None':
 		return self._value
 
+	def value_type(self) -> str:
+		return self._value_type
+
 	def formula(self) -> str:
 		return self._formula
 
@@ -138,6 +141,7 @@ class CalcObjectsFactory():
 			return co
 
 		value = c_data.value()
+		value_type = c_data.value_type()
 		formula = c_data.formula()
 		unit_texput = get_cell(Headers.unit_texput).text()
 		tex_equation = get_cell(Headers.tex_equation).text()
@@ -152,6 +156,7 @@ class CalcObjectsFactory():
 
 		co._text = text
 		co._value = value
+		co._value_type = value_type
 		co._formula = formula
 
 		co._description = description

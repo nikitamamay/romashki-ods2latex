@@ -27,7 +27,7 @@ class Document():
         self.cfg_allow_symbolic_and_numeric_equation: bool = True
         self.cfg_use_units: bool = True
         self.cfg_default_digits_count: int = 3
-        # self.cfg_enable_fast_calc_in_where: bool = True  # TODO
+        # self.cfg_max_depth_of_fast_calc: int = 0
 
     def string(self) -> str:
         return self._string
@@ -127,7 +127,8 @@ class Document():
             value = co.text()
         else:
             dc = co.digits_count() if co.digits_count() != -1 else self.cfg_default_digits_count
-            value = math_utils.round_digits_str(co.value(), dc)
+            v = co.value() * (100 if co.value_type() == "percentage" else 1)
+            value = math_utils.round_digits_str(v, dc) + ("\\%" if co.value_type() == "percentage" else "")
         return tex_utils.pretty_number(value)
 
     def text_cite(self, cite_name: str, cite_aux: str = "") -> str:
