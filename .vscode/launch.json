@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: main.py tests/calc.ods",
             "type": "python",
             "request": "launch",
@@ -12,7 +20,12 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${workspaceFolder}/tests",
-            "args": ["calc.ods", "sh1", "-t", "data_calc_raw.tex"]
+            "args": [
+                "calc.ods",
+                "sh1",
+                "-t",
+                "data_calc_raw.tex"
+            ]
         }
     ]
 }

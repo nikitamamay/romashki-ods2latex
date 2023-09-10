@@ -8,11 +8,13 @@ def do_floats_equal(a: float, b: float) -> bool:
 
 
 def round_N(x: float, n: int) -> float:
-    return round(x * 10 ** n) / (10 ** n)
+    return round_tail(round(x * 10 ** n) / (10 ** n))
 
 
 def round_tail(x: float) -> float:
-    return round_N(x, PRECISION_DIGIT_COUNT)
+    # return round_N(x, PRECISION_DIGIT_COUNT)
+    n = PRECISION_DIGIT_COUNT
+    return round(x * 10 ** n) / (10 ** n)
 
 
 def count_digits(x: float) -> int:
@@ -68,3 +70,5 @@ if __name__ == '__main__':
         # print(n, round_N(x, n))
         print(n, round_digits_str(x, n))
 
+    n = 12032114
+    print(round_digits_str(n, 3))
