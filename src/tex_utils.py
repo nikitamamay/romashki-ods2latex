@@ -19,6 +19,7 @@ def fix_comma(text) -> str:
 def pretty_number(text: 'str|float|int') -> str:
     text = str(text)
     text = fix_comma(text)
+    text = text.replace('\u00a0', '')  # удаление пробела при форматировании типа '218 500'
     return text
 
 
