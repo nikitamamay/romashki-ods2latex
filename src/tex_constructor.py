@@ -129,8 +129,8 @@ class Document():
         return s
 
     def text_value(self, co: calc_object.CalcObject, multiply_percentage_100: bool = True) -> str:
-        if co.value() is None or (co.is_constant()):
-            if not multiply_percentage_100:
+        if co.value() is None or co.is_constant():
+            if co.value_type() == "percentage" and not multiply_percentage_100:
                 value = co.value()
             else:
                 value = co.text()
