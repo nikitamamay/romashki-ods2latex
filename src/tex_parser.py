@@ -3,7 +3,7 @@ import str_utils
 
 def _parse_pair(l: 'list[str]') -> str:
 	if not isinstance(l, list):
-		raise Exception("list[str] was expected, got: \"" + l + "\"")
+		raise Exception(f"list[str] was expected, got: {repr(l)}")
 
 	s: str = ""
 

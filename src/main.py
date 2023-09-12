@@ -83,6 +83,7 @@ ss: spreadsheet_parser.Spreadsheet = spreadsheet_parser.parse_spreadsheet(xml)
 # printing read tables sizes
 for t in ss.tables():
     print(t.name(), ":", t.get_row_count(), "x", t.get_column_count())
+print()
 
 doc = tex_constructor.Document(ss)
 
@@ -105,4 +106,4 @@ text = doc.string_fixed_percent()
 with open(tex_filename, "w", encoding="utf-8") as file:
     written = file.write(text)
 
-print(f"Written {written} bytes in '{tex_filename}'")
+print(f"\nWritten {written} bytes in '{tex_filename}'")

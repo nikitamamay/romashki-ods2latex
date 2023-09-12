@@ -70,6 +70,10 @@ class Address():
 		return Address(sheet, row, column)
 
 	@staticmethod
+	def empty() -> 'Address':
+		return Address("", 0, 0)
+
+	@staticmethod
 	def get_column_name(number: int) -> str:
 		if number < 26:
 			return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[number]
@@ -98,9 +102,8 @@ class Address():
 			self.column() if column is None else column,
 		)
 
-
-	# def __hash__(self) -> int:  # FIXME # Нужно ли вообще? - это для @functools.cache
-	# 	return self.__str__().__hash__()
+	def __hash__(self) -> int:  # для @functools.cache
+		return self.__str__().__hash__()
 
 	def __eq__(self, __value: object) -> bool:
 		if isinstance(__value, Address):
@@ -193,32 +196,6 @@ class Table():
 	def __init__(self) -> None:
 		self._name: str = ""
 		self._cells: dict[int, dict[int, Cell]] = {}
-		# self._named_exprs: list[NamedExpression] = []
-
-		# self._COs_cache: dict[int, CalcObject] = {}  # cache
-		# self._columns: dict[str, int] = {
-		# 	"data": -1,
-		# 	"texput": -1,
-		# 	"unit_texput": -1,
-		# 	"tex_equation": -1,
-		# 	"description": -1,
-		# 	"is_known": -1,
-		# 	"is_constant": -1,
-		# 	"do_not_print": -1,
-		# 	# "is_disabled": -1,
-		# 	"source": -1,
-		# 	"source_name": -1,
-		# 	"source_aux": -1,
-		# }
-
-	# def init_header_row(self) -> None:
-	# 	for i in range(self.get_column_count()):
-	# 		c = self.get_cell(0, i)
-	# 		if c.text() in self._columns:
-	# 			self._columns[c.text()] = i
-
-	# def clear_cache(self) -> None:
-	# 	self._COs_cache.clear()
 
 	def name(self) -> str:
 		return self._name
@@ -248,74 +225,6 @@ class Table():
 	def is_empty(self) -> bool:
 		return self.get_row_count() == 0
 
-	# def get_calc_object(self, row: int) -> CalcObject:
-	# 	if not row in self._COs_cache:
-	# 		addr = Address(self._name, row, 0)
-	# 		co = CalcObject(addr)
-
-	# 		c_data = self.get_cell(row, self._columns["data"])
-	# 		text = c_data.text()
-	# 		texput = self.get_cell(row, self._columns["texput"]).text()
-
-	# 		if text == "" and texput == "":
-	# 			return co
-
-	# 		# FIXME убирать неразрывный пробел, только если value_type = float и т.п., но не для текста!
-	# 		text = text.replace("\u00a0", "")  # неразрывный пробел в написании числа
-
-	# 		value = c_data.value()
-	# 		formula = c_data.formula()
-	# 		description = self.get_cell(row, self._columns["description"]).text()
-	# 		unit_texput = self.get_cell(row, self._columns["unit_texput"]).text()
-	# 		tex_equation = self.get_cell(row, self._columns["tex_equation"]).text()
-	# 		is_known = self.get_cell(row, self._columns["is_known"]).text()
-	# 		is_constant = self.get_cell(row, self._columns["is_constant"]).text()
-	# 		do_not_print = self.get_cell(row, self._columns["do_not_print"]).text()
-	# 		source = self.get_cell(row, self._columns["source"]).text()
-	# 		source_name = self.get_cell(row, self._columns["source_name"]).text()
-	# 		source_aux = self.get_cell(row, self._columns["source_aux"]).text()
-
-	# 		co._text = text
-	# 		co._value = value
-	# 		co._formula = formula
-
-	# 		co._description = description
-
-	# 		co._texput = texput if texput != "" \
-	# 			else f'\\text{{{fix_percent(addr.get_text())}}}'
-
-	# 		co._unit_texput = unit_texput
-
-	# 		co._tex_equation = tex_equation
-
-	# 		co._is_known = is_known != ""
-	# 		co._treat_as_constant = is_constant != ""
-	# 		co._do_not_print = do_not_print != ""
-
-	# 		if self._columns["source_name"] != -1:
-	# 			co._source_name = source_name
-	# 			co._source_aux = source_aux
-	# 		else:
-	# 			_i = source.find(",")
-	# 			if _i != -1:
-	# 				co._source_name = source[:_i].strip()
-	# 				co._source_aux = source[_i + 1:].strip()
-	# 			else:
-	# 				co._source_name = source.strip()
-
-	# 		self._COs_cache[row] = co
-
-	# 	return self._COs_cache[row]
-
-	# def get_named_exprs(self) -> list[NamedExpression]:
-	# 	return self._named_exprs
-
-	# def iterate_calc_objects(self) -> typing.Iterator[CalcObject]:
-	# 	for i in range(1, self.get_row_count()):
-	# 		co = self.get_calc_object(i)
-	# 		if not co.is_empty():
-	# 			yield co
-
 	def to_tsv(self) -> str:
 		result = ""
 		rows = self.get_row_count()
@@ -330,15 +239,15 @@ class Spreadsheet():
 	"""
 		Набор таблиц (листов) (`Table`) и именованных выражений (`NamedExpression`).
 	"""
+
+	VIRTUAL_SHEET_NAME = "__VIRTUAL_SHEET"
+
 	def __init__(self) -> None:
 		self._sheets: dict[str, Table] = {}
 		self._named_exprs: dict[str, NamedExpression] = {}
 
 	def get_cell(self, addr: Address) -> Cell:
 		return self.get_table(addr.sheet()).get_cell(addr.row(), addr.column())
-
-	# def get_calc_object(self, addr: Address) -> CalcObject:
-	# 	return self.get_table(addr.sheet()).get_calc_object(addr.row())
 
 	def get_table(self, table_name: str) -> Table:
 		if table_name in self._sheets:
@@ -365,56 +274,22 @@ class Spreadsheet():
 	def named_expressions(self) -> list[NamedExpression]:
 		return self._named_exprs.values()
 
-	# def get_dependent_cells(self, formula_text: str, self_sheet: str) -> list[Address]:
-	# 	cells, NEs = get_dependent_cells_and_NEs(formula_text)
-	# 	cells = [(self_sheet + name if name.startswith(".") else name).replace("$", "") for name in cells]
+	def create_table(self, name: str) -> Table:
+		t = Table()
+		t._name = name
+		self.set_table(t)
+		return t
 
-	# 	addresses: list[Address] = []
-	# 	for addr in map(lambda c: Address.from_text(c), cells):
-	# 		if not addr in addresses:
-	# 			addresses.append(addr)
+	def has_table(self, name: str) -> bool:
+		return name in self._sheets
 
-	# 	for ne in NEs:
-	# 		try:
-	# 			addr = self.get_named_expression(ne).address()
-	# 			if not addr in addresses:
-	# 				addresses.append(addr)
-	# 		except Exception as e:
-	# 			# print(e)
-	# 			pass
-
-	# 	return addresses
-
-	# def get_dependent_cells_in_order(self, formula_text: str, self_sheet: str) -> list[Address]:
-	# 	names = get_dependent_names_in_order(formula_text)
-
-	# 	addresses: list[Address] = []
-	# 	for name in names:
-	# 		if name.startswith("["):  # Cell name
-	# 			name = ("[" + self_sheet + name[1:] if name.startswith("[.") else name)[1:-1].replace("$", "")
-	# 			addr = Address.from_text(name)
-	# 			if not addr in addresses:
-	# 				addresses.append(addr)
-	# 		else:  # NamedExpression name
-	# 			try:
-	# 				addr = self.get_named_expression(name).address()
-	# 				if not addr in addresses:
-	# 					addresses.append(addr)
-	# 			except Exception as e:
-	# 				# print(e)
-	# 				pass
-
-	# 	return addresses
-
-	# def get_dependent_cells_for(self, addr: Address) -> list[Address]:
-	# 	co = self.get_calc_object(addr)
-	# 	return self.get_dependent_cells(co.formula(), addr.sheet())
-
-	# def get_dependent_cells_in_order_for(self, addr: Address) -> list[Address]:
-	# 	co = self.get_calc_object(addr)
-	# 	return self.get_dependent_cells_in_order(co.formula(), addr.sheet())
-
-
+	def ensure_table(self, name: str) -> Table:
+		"""
+			Возвращает `Table` с именем `name`. Если такой таблицы нет, создает её.
+		"""
+		if not self.has_table(name):
+			return self.create_table(name)
+		return self.get_table(name)
 
 
 def _parse_cell(

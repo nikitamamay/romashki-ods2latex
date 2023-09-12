@@ -8,6 +8,9 @@ import str_utils
 import math_utils
 
 
+re_number_sign = re.compile(r"\#\d+\b")
+
+
 class Document():
     def __init__(self, spreadsheet: sp.Spreadsheet) -> None:
         self._spreadsheet: sp.Spreadsheet = spreadsheet
@@ -152,7 +155,6 @@ class Document():
         s = tex_utils.fix_comma(s)
 
         s = re.sub(r'\\x\b', " ", s)
-        s = s.replace("PI()", "\\pi")
 
         addresses: list[sp.Address] = self._COF.get_dependent_addresses_in_order(co.formula(), co.address().sheet())[1]
         for i in range(len(addresses) - 1, -1, -1):
@@ -168,11 +170,12 @@ class Document():
 
         s = re.sub(r'\\x\b', "\\\\cdot", s)
 
-        # ВМЕСТО \pi или PI() использовать NamedExpression Pi, которое is_known=1, is_constant=1, data="of:=PI()" и texput=\pi
-        s = re.sub(r'\\pi\b', "3,14", s)  # FIXME а если это просто индекс?
-        s = s.replace("PI()", "3,14")
-
         addresses: list[sp.Address] = self._COF.get_dependent_addresses_in_order(co.formula(), co.address().sheet())[1]
+        numbers: list[str] = set(re_number_sign.findall(co.tex_equation()))  # 'set' instead of 'list' is for uniquiness of elements
+
+        if len(addresses) != len(numbers):
+            print(f"Warning: {co.address()}: there are {len(addresses)} dependent addresses, but {len(numbers)} #-numbers. Bad '{calc_object.Headers.tex_equation}'?")
+
         for i in range(len(addresses) - 1, -1, -1):
             co = self._COF.get_calc_object(addresses[i])
             substr = "#" + str(i + 1)
@@ -269,7 +272,7 @@ class Document():
                             if self.is_equation_known(addr):
                                 self._to_calculate.insert(-1, co.address())  # append() leads to infinite loop!
                                 pass
-                                print("Warning: Trying", co.address(),"- equation_known, but cannot be calculated because of these:", uncalculated)
+                                print(f"Warning: {co.address()}: equation_known, but cannot be calculated because of {uncalculated}")
                             else:
                                 s += self.text_equation_symbolic(co, self.cfg_use_equation_numbers, to_write_where)
                                 self.set_known(addr)

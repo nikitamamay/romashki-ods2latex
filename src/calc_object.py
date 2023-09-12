@@ -1,6 +1,7 @@
 import typing
 import functools
 import re
+import math
 
 import tex_utils
 import str_utils
@@ -14,7 +15,7 @@ re_cell = re.compile(r'(?<=\[)[\s\S]+?(?=\])', re.I)
 re_named_expr = re.compile(r'(?!=\[)\b(?!\d)\w+?\b(?!\])', re.I)
 
 # RegExp на ссылки на другую ячейку или на именованное выражение
-re_dependent_name = re.compile(r'\[[\s\S]+?\]|(?!=\[)\b(?!\d)\w+?\b(?!\])', re.I)
+re_dependent_name = re.compile(r'\[[\s\S]+?\]|(?!=\[)\b(?!\d)\w+?\b(?!\])\(\)|(?!=\[)\b(?!\d)\w+?\b(?!\])', re.I)
 
 # RegExp на знак умножения в формулах
 re_star = re.compile(r'\s*\*\s*', re.I)
@@ -29,11 +30,25 @@ class Headers:
 	is_known = "is_known"
 	is_constant = "is_constant"
 	do_not_print = "do_not_print"
-	is_disabled = "is_disabled"
 	source = "source"
 	source_name = "source_name"
 	source_aux = "source_aux"
 	digits_count = "digits_count"
+
+Headers_str: list[str] = [
+	Headers.data,
+	Headers.texput,
+	Headers.unit_texput,
+	Headers.tex_equation,
+	Headers.description,
+	Headers.is_known,
+	Headers.is_constant,
+	Headers.do_not_print,
+	Headers.source,
+	Headers.source_name,
+	Headers.source_aux,
+	Headers.digits_count,
+]
 
 
 class CalcObject():
@@ -126,8 +141,24 @@ class CalcObjectsFactory():
 		self._ss: sp.Spreadsheet = ss
 		self._warnings: dict[str, int] = {}
 
-	# @functools.cache
+		self._virtual_table = self._ss.ensure_table(sp.Spreadsheet.VIRTUAL_SHEET_NAME)
+		self.init_virtual_table()
+
+		co_PI = CalcObject(sp.Address.empty())
+		co_PI._is_known = True
+		co_PI._description = "число Пи"
+		co_PI._texput = "\\pi"
+		co_PI._value = math.pi
+		co_PI._text = "3,14"
+		co_PI._value_type = "float"
+		addr = self.set_virtual_CO(co_PI)
+		ne = sp.NamedExpression("PI()", addr)
+		self._ss.set_named_expression(ne)
+
 	def get_calc_object(self, addr: sp.Address) -> 'CalcObject':
+		return self._get_calc_object(addr)
+	@functools.cache
+	def _get_calc_object(self, addr: sp.Address) -> 'CalcObject':
 		def get_cell(c: str):
 			return self._ss.get_cell(addr.copy(column=self.get_column_number(addr, c)))
 
@@ -148,7 +179,6 @@ class CalcObjectsFactory():
 		tex_equation = get_cell(Headers.tex_equation).text()
 		is_known = get_cell(Headers.is_known).text()
 		is_constant = get_cell(Headers.is_constant).text()
-		is_disabled = get_cell(Headers.is_disabled).text()
 		do_not_print = get_cell(Headers.do_not_print).text()
 		source = get_cell(Headers.source).text()
 		source_name = get_cell(Headers.source_name).text()
@@ -167,7 +197,7 @@ class CalcObjectsFactory():
 		else:
 			co._texput = f'\\text{{{tex_utils.escape_tex(addr.get_text())}}}'
 			if value_type in ["float", "percentage"]:
-				self.print_warning(f"Warning: no texput for {addr}")
+				self.print_warning(f"Warning: {addr}: no texput")
 
 		co._unit_texput = unit_texput
 
@@ -176,7 +206,6 @@ class CalcObjectsFactory():
 
 		co._is_known = is_known != ""
 		co._do_not_print = do_not_print != ""
-		co._is_disabled = is_disabled != ""
 		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
 
 		co._digits_count = str_utils.safe_int(digits_count, -1)
@@ -193,13 +222,15 @@ class CalcObjectsFactory():
 				co._source_name = source.strip()
 		return co
 
-	# @functools.cache
 	def get_column_number(self, addr: sp.Address, column_header_name: str, headers_row: int = 0) -> int:
 		"""
 			Возвращает номер столбца (нумерация с `0`), на пересечении которого \
 			со строкой `headers_row` (нумерация с `0`) в ячейке \
 			содержится текст `column_header_name`.
 		"""
+		return self._get_column_number(addr, column_header_name, headers_row)
+	@functools.cache
+	def _get_column_number(self, addr: sp.Address, column_header_name: str, headers_row: int = 0) -> int:
 		table: sp.Table = self._ss.get_table(addr.sheet())
 		for i in range(table.get_column_count()):
 			if table.get_cell(headers_row, i).text() == column_header_name:
@@ -270,3 +301,43 @@ class CalcObjectsFactory():
 			self._warnings[msg] = 0
 			print(msg)
 		self._warnings[msg] += 1
+
+	def init_virtual_table(self) -> None:
+		for j, header in enumerate(Headers_str):
+			c = sp.Cell()
+			c.init(0, "", header, "string")
+			self._virtual_table.set_cell(0, j, c)
+
+	def set_virtual_CO(self, co: CalcObject) -> sp.Address:
+		i = self._virtual_table.get_row_count()
+		addr = sp.Address(self._virtual_table.name(), i, 0)
+
+		def _set_cell(column_header_name: str, text: str) -> None:
+			j = self.get_column_number(addr, column_header_name)
+			c = sp.Cell()
+			vt = "string" if text != "" else ""
+			c.init(0, "", text, vt)
+			self._virtual_table.set_cell(i, j, c)
+
+		_set_cell(Headers.source_name, co.source_name())
+		_set_cell(Headers.source_aux, co.source_aux())
+		_set_cell(Headers.description, co.description())
+		_set_cell(Headers.texput, co.texput())
+		_set_cell(Headers.unit_texput, co.unit_texput())
+		_set_cell(Headers.tex_equation, co.tex_equation())
+		_set_cell(Headers.is_known, co.is_known())
+		_set_cell(Headers.is_constant, co.is_constant())
+		_set_cell(Headers.do_not_print, co.do_not_print())
+		_set_cell(Headers.digits_count, co.digits_count())
+
+		c_data = sp.Cell()
+		c_data.init(
+			co.value(),
+			co.formula(),
+			co.text(),
+			co.value_type(),
+		)
+		j = self.get_column_number(addr, Headers.data)
+		self._virtual_table.set_cell(i, j, c_data)
+
+		return addr
