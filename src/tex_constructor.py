@@ -76,6 +76,10 @@ class Document():
         ifsep = " --- " if (len(ifdescription) > 0 and len(iftext) > 0) else ""
         return f'{str_utils.first_uppercase(ifdescription)}{ifsep}{iftext}\n'
 
+    def text_redirect(self, co: calc_object.CalcObject) -> str:
+        ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
+        return f'Выше стало известно, что {co.description()} ${co.texput()} = {self.text_value(co, True)}{ifunit}$.\n'
+
     def text_constant(self, co: calc_object.CalcObject) -> str:
         ifsource = " " + self.text_cite(co.source_name(), co.source_aux()) if co.source_name() != "" else ""
         ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
@@ -185,7 +189,7 @@ class Document():
         for i in range(len(addresses) - 1, -1, -1):
             child = self._COF.get_calc_object(addresses[i])
             substr = "#" + str(i + 1)
-            ifunit = "" if co.unit_texput() == "" else f' \\text{{~{child.unit_texput()}}}'
+            ifunit = "" if child.unit_texput() == "" else f' \\text{{~{child.unit_texput()}}}'
             t = self.text_value(child, False) + (ifunit if self.cfg_use_units else "")
             s = s.replace(substr, t)
             s_for_eval = s_for_eval.replace(substr, str(child.value()))
@@ -248,9 +252,11 @@ class Document():
         addr = co.address()
 
         if co.value_type() in ["float", "percentage"]:
-            if co.is_constant():
+            if co.is_redirect():
+                s += self.text_redirect(co)
+
+            elif co.is_constant():
                 if self.is_known(addr):
-                    # print(co.address(), "is known; skipping it.")
                     pass
                 else:
                     s += self.text_constant(co)

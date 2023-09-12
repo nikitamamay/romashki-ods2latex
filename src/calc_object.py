@@ -34,6 +34,7 @@ class Headers:
 	source_name = "source_name"
 	source_aux = "source_aux"
 	digits_count = "digits_count"
+	is_redirect = "is_redirect"
 
 Headers_str: list[str] = [
 	Headers.data,
@@ -48,6 +49,7 @@ Headers_str: list[str] = [
 	Headers.source_name,
 	Headers.source_aux,
 	Headers.digits_count,
+	Headers.is_redirect,
 ]
 
 
@@ -74,6 +76,7 @@ class CalcObject():
 		self._is_known: bool = False
 		self._is_constant: bool = False
 		self._do_not_print: bool = False
+		self._is_redirect: bool = False
 		self._digits_count: int = -1
 
 		self._text: str = ""
@@ -94,6 +97,9 @@ class CalcObject():
 
 	def is_known(self) -> bool:
 		return self._is_known
+
+	def is_redirect(self) -> bool:
+		return self._is_redirect
 
 	def do_not_print(self) -> bool:
 		return self._do_not_print
@@ -165,6 +171,19 @@ class CalcObjectsFactory():
 		co = CalcObject(addr)
 
 		c_data = get_cell(Headers.data)
+		formula = c_data.formula()
+
+		is_redirect: bool = get_cell(Headers.is_redirect).text() != ""
+		if is_redirect:
+			dependent: list[sp.Address] = self.get_dependent_addresses_in_order(formula, addr.sheet())[1]
+			if len(dependent) != 1:
+				self.print_warning(f"Warning: {co.address()}: bad redirect")
+			else:
+				addr_redirect = dependent[0]
+				co = self.get_calc_object(addr_redirect)
+				co._is_redirect = True
+				return co
+
 		text = c_data.text()
 		texput = get_cell(Headers.texput).text()
 		description = get_cell(Headers.description).text()
@@ -174,7 +193,6 @@ class CalcObjectsFactory():
 
 		value = c_data.value()
 		value_type = c_data.value_type()
-		formula = c_data.formula()
 		unit_texput = get_cell(Headers.unit_texput).text()
 		tex_equation = get_cell(Headers.tex_equation).text()
 		is_known = get_cell(Headers.is_known).text()
