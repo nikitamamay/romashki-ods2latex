@@ -137,15 +137,14 @@ class Document():
         s += ".\n"
         return s
 
-    def text_value(self, co: calc_object.CalcObject, multiply_percentage_100: bool = True) -> str:
-        if co.value() is None or co.is_constant():
-            if co.value_type() == "percentage" and not multiply_percentage_100:
-                value = co.value()
-            else:
-                value = co.text()
+    def text_value(self, co: calc_object.CalcObject, multiply_percentage_by_100: bool = True) -> str:
+        if co.value() is None or (co.is_constant() and co.digits_count() == -1):
+            value = co.text()
+        elif co.is_constant() and co.value_type() == "percentage" and not multiply_percentage_by_100:
+            value = co.value()
         else:
-            dc = co.digits_count() if co.digits_count() != -1 else self.cfg_default_digits_count
-            use_percents = (co.value_type() == "percentage" and multiply_percentage_100)
+            dc = co.digits_count() if co.digits_count() >= 0 else self.cfg_default_digits_count
+            use_percents = (co.value_type() == "percentage" and multiply_percentage_by_100)
             v = co.value() * (100 if use_percents else 1)
             value = math_utils.round_digits_str(v, dc) + ("\\%" if use_percents else "")
         return tex_utils.pretty_number(value)

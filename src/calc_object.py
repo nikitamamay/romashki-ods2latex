@@ -15,7 +15,7 @@ re_cell = re.compile(r'(?<=\[)[\s\S]+?(?=\])', re.I)
 re_named_expr = re.compile(r'(?!=\[)\b(?!\d)\w+?\b(?!\])', re.I)
 
 # RegExp на ссылки на другую ячейку или на именованное выражение
-re_dependent_name = re.compile(r'\[[\s\S]+?\]|(?!=\[)\b(?!\d)\w+?\b(?!\])\(\)|(?!=\[)\b(?!\d)\w+?\b(?!\])', re.I)
+re_dependent_name = re.compile(r'\[[\s\S]+?\]|\bPI\(\)|\bEXP\(1\)|(?!=\[)\b(?!\d)\w+?\b(?!\])', re.I)
 
 # RegExp на знак умножения в формулах
 re_star = re.compile(r'\s*\*\s*', re.I)
@@ -155,11 +155,24 @@ class CalcObjectsFactory():
 		co_PI._description = "число Пи"
 		co_PI._texput = "\\pi"
 		co_PI._value = math.pi
-		co_PI._text = "3,14"
+		co_PI._text = str(co_PI._value)
+		co_PI._digits_count = -2
 		co_PI._value_type = "float"
-		addr = self.set_virtual_CO(co_PI)
-		ne = sp.NamedExpression("PI()", addr)
-		self._ss.set_named_expression(ne)
+		addr_PI = self.set_virtual_CO(co_PI)
+		ne_PI = sp.NamedExpression("PI()", addr_PI)
+		self._ss.set_named_expression(ne_PI)
+
+		co_E = CalcObject(sp.Address.empty())
+		co_E._is_known = True
+		co_E._description = "число Эйлера"
+		co_E._texput = "e"
+		co_E._value = math.e
+		co_E._text = str(co_E._value)
+		co_E._digits_count = -2
+		co_E._value_type = "float"
+		addr_E = self.set_virtual_CO(co_E)
+		ne_E = sp.NamedExpression("EXP(1)", addr_E)
+		self._ss.set_named_expression(ne_E)
 
 	def get_calc_object(self, addr: sp.Address) -> 'CalcObject':
 		return self._get_calc_object(addr)
