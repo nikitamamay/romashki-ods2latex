@@ -33,7 +33,7 @@ def _parse_pair(l: 'list[str]') -> str:
 					i += 1
 					continue
 				else:
-					raise Exception(f"Warning: unknown el: \"{el}\"")
+					raise Exception(f"unknown el: \"{el}\"")
 			else:
 				el = el.replace("^", "**")
 				s += el
@@ -46,6 +46,11 @@ def _parse_pair(l: 'list[str]') -> str:
 
 
 def parse_tex(tex: str) -> str:
+	tex = tex.replace("\\cdot", " \\cdot ")
+	tex = tex.replace("\\left", "")
+	tex = tex.replace("\\right", "")
+	tex = tex.replace("\\dfrac", "\\frac")
+
 	l = str_utils.find_pair(tex, 0)[0]
 	# print(l)
 	s = _parse_pair(l)
@@ -63,3 +68,9 @@ if __name__ == '__main__':
 
 	# l, i = str_utils.find_pair2(t, 0)
 	# print(l, i)
+
+	t = '\\frac{(40000.0+1016.0)\\cdot(9.81 + 0.233333333333333) \\cdot 560.0}{2 \\cdot 4.0 \\cdot 0.96 \\cdot 0.98}'
+	print(parse_tex(t))
+
+	t = '\\frac{2 \\cdot 3.141592653589793 \\cdot 970.0 \\cdot \\left( 1.15 \\cdot 6.72 + (40000.0 + 1016.0) \\cdot \\left( \\dfrac{560.0}{2 \\cdot 4.0 \\cdot 31.5} \\right)^2 \\cdot \\dfrac{1}{0.825} \\right)}{1678.51037920628 - 1083.81672727273}'
+	print(parse_tex(t))
