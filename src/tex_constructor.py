@@ -6,6 +6,7 @@ import calc_object as calc_object
 import tex_utils
 import str_utils
 import math_utils
+import tex_parser
 
 
 re_number_sign = re.compile(r"\#\d+\b")
@@ -30,6 +31,7 @@ class Document():
         self.cfg_allow_symbolic_and_numeric_equation: bool = True
         self.cfg_use_units: bool = True
         self.cfg_default_digits_count: int = 3
+        self.cfg_check_tex_equation_by_evaluation: bool = False
         # self.cfg_max_depth_of_fast_calc: int = 0
 
     def string(self) -> str:
@@ -165,23 +167,46 @@ class Document():
         return s
 
     def subst_numbers(self, co: calc_object.CalcObject) -> str:
+        try_to_eval: bool = self.cfg_check_tex_equation_by_evaluation
+
         s = co.tex_equation()
         s = tex_utils.fix_comma(s)
 
         s = re.sub(r'\\x\b', "\\\\cdot", s)
+        s_for_eval = s
 
         addresses: list[sp.Address] = self._COF.get_dependent_addresses_in_order(co.formula(), co.address().sheet())[1]
         numbers: list[str] = set(re_number_sign.findall(co.tex_equation()))  # 'set' instead of 'list' is for uniquiness of elements
 
         if len(addresses) != len(numbers):
             print(f"Warning: {co.address()}: there are {len(addresses)} dependent addresses, but {len(numbers)} #-numbers. Bad '{calc_object.Headers.tex_equation}'?")
+            try_to_eval = False
 
         for i in range(len(addresses) - 1, -1, -1):
-            co = self._COF.get_calc_object(addresses[i])
+            child = self._COF.get_calc_object(addresses[i])
             substr = "#" + str(i + 1)
-            ifunit = "" if co.unit_texput() == "" else f' \\text{{~{co.unit_texput()}}}'
-            t = self.text_value(co, False) + (ifunit if self.cfg_use_units else "")
+            ifunit = "" if co.unit_texput() == "" else f' \\text{{~{child.unit_texput()}}}'
+            t = self.text_value(child, False) + (ifunit if self.cfg_use_units else "")
             s = s.replace(substr, t)
+            s_for_eval = s_for_eval.replace(substr, str(child.value()))
+
+        ### Проверка на совпадение .value() и посчитанного через parse_tex(.tex_equation())
+        if try_to_eval:
+            try:
+                s_for_eval = tex_parser.parse_tex(s_for_eval)
+                s_for_eval = s_for_eval.replace(",", ".")
+            except:
+                print(f"Warning: {co.address()}: cannot parse from TeX {repr(s_for_eval)}")
+                try_to_eval = False
+
+        if try_to_eval:
+            try:
+                evaluated_value = eval(s_for_eval)
+                if not math_utils.do_floats_equal(evaluated_value, co.value()):
+                    print(f"Warning: {co.address()}: (evaluated from {calc_object.Headers.tex_equation} {evaluated_value}) != (from text {co.value()})")
+            except:
+                print(f"Warning: {co.address()}: cannot evaluate {repr(s_for_eval)}")
+
         return s
 
     def process(self, co_to_process: typing.Iterable[sp.Address]) -> None:
