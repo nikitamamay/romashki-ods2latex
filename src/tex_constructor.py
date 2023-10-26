@@ -29,7 +29,7 @@ class Document():
         self.cfg_use_equation_numbers: bool = True
         self.cfg_always_write_where: bool = False
         self.cfg_allow_symbolic_and_numeric_equation: bool = True
-        self.cfg_use_units: bool = True
+        self.cfg_use_units_in_equations: bool = True
         self.cfg_default_digits_count: int = 3
         self.cfg_check_tex_equation_by_evaluation: bool = False
         # self.cfg_max_depth_of_fast_calc: int = 0
@@ -189,7 +189,7 @@ class Document():
             child = self._COF.get_calc_object(addresses[i])
             substr = "#" + str(i + 1)
             ifunit = "" if child.unit_texput() == "" else f' \\text{{~{child.unit_texput()}}}'
-            t = self.text_value(child, False) + (ifunit if self.cfg_use_units else "")
+            t = self.text_value(child, False) + (ifunit if (co.subst_units() == -1 and self.cfg_use_units_in_equations) or co.subst_units() == 1 else "")
             s = s.replace(substr, t)
             s_for_eval = s_for_eval.replace(substr, str(child.value()))
 

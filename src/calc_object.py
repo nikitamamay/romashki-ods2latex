@@ -35,6 +35,7 @@ class Headers:
 	source_aux = "source_aux"
 	digits_count = "digits_count"
 	is_redirect = "is_redirect"
+	subst_units = "subst_units"
 
 Headers_str: list[str] = [
 	Headers.data,
@@ -50,6 +51,7 @@ Headers_str: list[str] = [
 	Headers.source_aux,
 	Headers.digits_count,
 	Headers.is_redirect,
+	Headers.subst_units,
 ]
 
 
@@ -77,7 +79,8 @@ class CalcObject():
 		self._is_constant: bool = False
 		self._do_not_print: bool = False
 		self._is_redirect: bool = False
-		self._digits_count: int = -1
+		self._digits_count: int = -1  # больше нуля = конкретное задание; -1 = по-умолчанию, если расчетная величина; -2 = по-умолчанию в любом случае
+		self._subst_units: int = -1  # -1 = по-умолчанию; 0 = нет; 1 = да
 
 		self._text: str = ""
 		self._value: 'float|None' = None
@@ -139,6 +142,9 @@ class CalcObject():
 
 	def digits_count(self) -> int:
 		return self._digits_count
+
+	def subst_units(self) -> int:
+		return self._subst_units
 
 
 class CalcObjectsFactory():
@@ -215,6 +221,7 @@ class CalcObjectsFactory():
 		source_name = get_cell(Headers.source_name).text()
 		source_aux = get_cell(Headers.source_aux).text()
 		digits_count = get_cell(Headers.digits_count).text()
+		subst_units = get_cell(Headers.subst_units).text()
 
 		co._text = text
 		co._value = value
@@ -240,6 +247,7 @@ class CalcObjectsFactory():
 		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
 
 		co._digits_count = str_utils.safe_int(digits_count, -1)
+		co._subst_units = str_utils.safe_int(subst_units, -1)
 
 		if self.get_column_number(addr, Headers.source_name) != -1:
 			co._source_name = source_name
