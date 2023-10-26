@@ -1,5 +1,7 @@
 import typing
 
+from xml.sax.saxutils import unescape as xml_unescape
+
 import str_utils
 
 
@@ -19,7 +21,7 @@ def parse_xml(
 		txt_pre, i = str_utils.slice_until(text, ["<"], i)
 
 		if txt_pre != "":
-			result.append(NodeText(txt_pre))
+			result.append(NodeText(xml_unescape(txt_pre)))
 
 		tag_all, i = str_utils.slice_until(text, [">"], i)
 
