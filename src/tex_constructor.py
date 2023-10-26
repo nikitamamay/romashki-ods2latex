@@ -41,7 +41,10 @@ class Document():
         return tex_utils.fix_percent(self._string)  # FIXME
 
     def is_known(self, addr: sp.Address) -> bool:
-        return self._COF.get_calc_object(addr).is_known() or addr.copy(column=0) in self._known
+        co = self._COF.get_calc_object(addr)  #
+        return \
+            co.is_known() \
+            or self._COF.get_calc_object(addr).address().copy(column=0) in self._known  # решение проблемы, когда CO с is_redirect не числится в self._known
 
     def is_equation_known(self, addr: sp.Address) -> bool:
         return addr.copy(column=0) in self._equation_known
@@ -250,9 +253,13 @@ class Document():
         s = ""
         addr = co.address()
 
+        if addr.sheet() == "drive1" and addr.row() >= 51:
+            pass
+
         if co.value_type() in ["float", "percentage"]:
             if co.is_redirect():
                 s += self.text_redirect(co)
+                self.set_known(addr)
 
             elif co.is_constant():
                 if self.is_known(addr):
