@@ -230,21 +230,22 @@ class CalcObjectsFactory():
 
 		co._description = description
 
+		co._is_known = is_known != ""
+		co._do_not_print = do_not_print != ""
+		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
+
 		if texput != "":
 			co._texput = texput
 		else:
-			co._texput = f'\\text{{{tex_utils.escape_tex(addr.get_text())}}}'
-			if value_type in ["float", "percentage"]:
-				self.print_warning(f"Warning: {addr}: no texput")
+			if not co.do_not_print():
+				co._texput = f'\\text{{{tex_utils.escape_tex(addr.get_text())}}}'
+				if value_type in ["float", "percentage"]:
+					self.print_warning(f"Warning: {addr}: no texput")
 
 		co._unit_texput = unit_texput
 
 		co._tex_equation = tex_equation if tex_equation != "" \
 			else self.ensure_tex_equation(formula, addr.sheet())
-
-		co._is_known = is_known != ""
-		co._do_not_print = do_not_print != ""
-		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
 
 		co._digits_count = str_utils.safe_int(digits_count, -1)
 		co._subst_units = str_utils.safe_int(subst_units, -1)
