@@ -189,6 +189,11 @@ class CalcObjectsFactory():
 
 		co = CalcObject(addr)
 
+		do_not_print = get_cell(Headers.do_not_print).text()
+		co._do_not_print = do_not_print != ""
+		if co.do_not_print():
+			return co
+
 		c_data = get_cell(Headers.data)
 		formula = c_data.formula()
 
@@ -216,7 +221,6 @@ class CalcObjectsFactory():
 		tex_equation = get_cell(Headers.tex_equation).text()
 		is_known = get_cell(Headers.is_known).text()
 		is_constant = get_cell(Headers.is_constant).text()
-		do_not_print = get_cell(Headers.do_not_print).text()
 		source = get_cell(Headers.source).text()
 		source_name = get_cell(Headers.source_name).text()
 		source_aux = get_cell(Headers.source_aux).text()
@@ -231,7 +235,6 @@ class CalcObjectsFactory():
 		co._description = description
 
 		co._is_known = is_known != ""
-		co._do_not_print = do_not_print != ""
 		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
 
 		if texput != "":
