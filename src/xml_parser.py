@@ -1,6 +1,6 @@
 import typing
 
-from xml.sax.saxutils import unescape as xml_unescape
+from html import unescape as html_unescape
 
 import str_utils
 
@@ -21,7 +21,7 @@ def parse_xml(
 		txt_pre, i = str_utils.slice_until(text, ["<"], i)
 
 		if txt_pre != "":
-			result.append(NodeText(xml_unescape(txt_pre)))
+			result.append(NodeText(html_unescape(txt_pre)))
 
 		tag_all, i = str_utils.slice_until(text, [">"], i)
 
@@ -128,6 +128,9 @@ class NodeTag(Node):
 			schar = text[i]
 			opt_value, i = str_utils.slice_until_non_escaped_char(text, [schar], i + 1)
 			i = str_utils.skip_chars(text, str_utils.WHITESPACE, i)
+
+			opt_name = html_unescape(opt_value)
+			opt_value = html_unescape(opt_value)
 
 			options[opt_name] = opt_value
 		return options
