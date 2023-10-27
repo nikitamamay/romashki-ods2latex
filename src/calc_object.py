@@ -191,8 +191,6 @@ class CalcObjectsFactory():
 
 		do_not_print = get_cell(Headers.do_not_print).text()
 		co._do_not_print = do_not_print != ""
-		if co.do_not_print():
-			return co
 
 		c_data = get_cell(Headers.data)
 		formula = c_data.formula()
@@ -205,7 +203,10 @@ class CalcObjectsFactory():
 			else:
 				addr_redirect = dependent[0]
 				co = self.get_calc_object(addr_redirect)
+
 				co._is_redirect = True
+				co._do_not_print = do_not_print != ""  # preserve do_not_print state as in original CO
+
 				return co
 
 		text = c_data.text()
