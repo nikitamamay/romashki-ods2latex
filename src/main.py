@@ -50,7 +50,7 @@ class OPTIONS:
     TEX_FILENAME = "tex_filename"
 
 args_positional, options = arguments_parser.ArgumentsParser() \
-    .set_min_max_count(2, 2) \
+    .set_min_max_count(2, -1) \
     .add_option_with_one_local_arg(["-t", "--tex"], OPTIONS.TEX_FILENAME) \
     .parse(sys.argv[1:])
 
@@ -62,7 +62,7 @@ if use_tex_filename:
 
 
 ods_filename: str = args_positional[0]
-sheet_name: str = args_positional[1]
+sheet_names: str = args_positional[1:]
 
 
 ### loading the ods file
@@ -89,10 +89,12 @@ doc = tex_constructor.Document(ss)
 
 
 ### listing CalcObjects in the target sheet, which specified in argv
-co_to_use: list[spreadsheet_parser.Address] = [
-    co.address() for co in \
-        filter(lambda co: not co.do_not_print(), doc._COF.iterate_calc_objects(sheet_name))
-]
+co_to_use: list[spreadsheet_parser.Address] = []
+for sheet_name in sheet_names:
+    co_to_use.extend([
+        co.address() for co in \
+            filter(lambda co: not co.do_not_print(), doc._COF.iterate_calc_objects(sheet_name))
+    ])
 
 
 ### constructing TeX
