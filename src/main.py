@@ -40,6 +40,11 @@ arguments_parser.ARGUMENTS_HELP_MESSAGE = """\
         Следить за изменениями ODS-файла и перезапускать программу в случае
         обновления файла.
 
+    --disable_units_in_equations
+        Отключить подстановку единиц измерения при подстановке чисел в формулы.
+        Единицы измерения всё равно будут подставляться в формулу, если для неё
+        принудительно задано subst_units == 1.
+
 
 Разработчик: Никита Мамай (nikita@mamay.su).
 Екатеринбург, 2023 год."""
@@ -56,12 +61,14 @@ tex_filename: str = "data_calc.tex"
 class OPTIONS:
     TEX_FILENAME = "tex_filename"
     WATCH_CHANGES = "watch_changes"
+    DISABLE_UNITS_IN_EQUATIONS = "disable_units_in_equations"
 
 
 args_positional, options = arguments_parser.ArgumentsParser() \
     .set_min_max_count(2, -1) \
     .add_option_with_one_local_arg(["-t", "--tex"], OPTIONS.TEX_FILENAME) \
     .add_option_boolean(["-w", "--watch"], OPTIONS.WATCH_CHANGES, True) \
+    .add_option_boolean(["--disable_units_in_equations"], OPTIONS.DISABLE_UNITS_IN_EQUATIONS) \
     .parse(sys.argv[1:])
 
 
@@ -71,6 +78,7 @@ if use_tex_filename:
     tex_filename = options[OPTIONS.TEX_FILENAME]
 
 do_watch_for_changes: bool = OPTIONS.WATCH_CHANGES in options
+do_disable_units_in_equations: bool = OPTIONS.DISABLE_UNITS_IN_EQUATIONS in options
 
 
 ods_filename: str = args_positional[0]
@@ -99,6 +107,7 @@ def do_action():
     print()
 
     doc = tex_constructor.Document(ss)
+    doc.cfg_use_units_in_equations = not do_disable_units_in_equations
 
 
     ### listing CalcObjects in the target sheet, which specified in argv
