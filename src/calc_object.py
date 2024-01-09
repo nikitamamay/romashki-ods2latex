@@ -187,6 +187,8 @@ class CalcObjectsFactory():
 		def get_cell(c: str):
 			return self._ss.get_cell(addr.copy(column=self.get_column_number(addr, c)))
 
+		force_constant = False
+
 		co = CalcObject(addr)
 
 		do_not_print = get_cell(Headers.do_not_print).text()
@@ -202,12 +204,21 @@ class CalcObjectsFactory():
 				self.print_warning(f"Warning: {co.address()}: bad redirect")
 			else:
 				addr_redirect = dependent[0]
-				co = self.get_calc_object(addr_redirect)
 
-				co._is_redirect = True
-				co._do_not_print = do_not_print != ""  # preserve do_not_print state as in original CO
+				try:
+					co = self.get_calc_object(addr_redirect)
+					co._is_redirect = True
+					co._do_not_print = do_not_print != ""  # preserve do_not_print state as in original CO
+					return co
+				except RecursionError:
+					self.print_warning(f"Warning: {co.address()}: recursive redirect")
+					co._is_redirect = False
+					force_constant = True
+				except Exception as e:
+					self.print_warning(f"Error: {co.address()}: {e.__class__.__name__}: {str(e)}")
+					return CalcObject(addr)
 
-				return co
+
 
 		text = c_data.text()
 		texput = get_cell(Headers.texput).text()
@@ -236,7 +247,7 @@ class CalcObjectsFactory():
 		co._description = description
 
 		co._is_known = is_known != ""
-		co._is_constant = is_constant != "" or formula == "" or not self.has_any_dependency(formula)
+		co._is_constant = force_constant or is_constant != "" or formula == "" or not self.has_any_dependency(formula)
 
 		if texput != "":
 			co._texput = texput
